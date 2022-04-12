@@ -1,0 +1,29 @@
+# Maintainer: Felix Yan <felixonmars@archlinux.org>
+
+pkgname=settings
+pkgver=0.1
+pkgrel=1
+pkgdesc="System Settings application"
+arch=('x86_64')
+url="https://github.com/Vampire-Offical/settings.git"
+license=('GPL')
+groups=('core_system')
+depends=('fishui' 'fontconfig' 'freetype2' 'icu' 'kcoreaddons' 'libxcursor'
+         'modemmanager-qt' 'networkmanager-qt'
+         # qml:
+         'bluez-qt' 'bluedevil' 'libcutefish' 'qt5-quickcontrols')
+makedepends=('extra-cmake-modules' 'ninja' 'qt5-tools')
+source=("git+https://github.com/Vampire-Offical/settings.git")
+sha512sums=('SKIP')
+
+build() {
+  cd settings
+
+  cmake -DCMAKE_INSTALL_PREFIX=/usr .
+  make
+}
+
+package() {
+  cd settings
+  make DESTDIR="$pkgdir" install
+}
