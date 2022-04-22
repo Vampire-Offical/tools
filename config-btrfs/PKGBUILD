@@ -1,0 +1,22 @@
+pkgname=config-btrfs
+_destname1="/etc"
+_destname2="/etc"
+_destname3="/etc"
+_destname4="/etc"
+pkgver=21.12
+pkgrel=03
+pkgdesc="calamares config"
+arch=('any')
+url="https://github.com/Vampire-Offical/btrf-calamares.git"
+license=('GPL3')
+makedepends=('git')
+depends=()
+conflicts=()
+provides=("${pkgname}")
+options=(!strip !emptydirs)
+source=(${pkgname}::"git+${url}")
+sha256sums=('SKIP')
+package() {
+	install -dm755 ${pkgdir}${_destname1}
+	cp -r ${srcdir}/${pkgname}${_destname1}/* ${pkgdir}${_destname1}
+}
