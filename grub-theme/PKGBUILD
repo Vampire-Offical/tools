@@ -1,0 +1,22 @@
+pkgname=grub-theme
+pkgver=1
+pkgrel=01
+pkgdesc="grub theme"
+arch=('any')
+url="https://github.com/Vampire-Offical/grub_theme.git"
+license=('GPL3')
+makedepends=('git')
+depends=()
+group="vampire"
+install=theme.install
+
+source=(${pkgname}::"git+${url}")
+sha256sums=('SKIP')
+package() {
+	mkdir -p $pkgdir/usr/share/grub/themes/vampire
+	mkdir -p $pkgdir/etc/default
+	cd $srcdir/$pkgname
+	mv grub $pkgdir/etc/default/
+	cd theme
+	cp -r . $pkgdir/usr/share/grub/themes/vampire/
+}

@@ -1,0 +1,14 @@
+post_install(){
+    echo "Enabling grub menu" 
+    sed -i '/GRUB_TIMEOUT_STYLE=/d' /etc/default/grub
+    echo 'GRUB_TIMEOUT_STYLE="menu"' >> /etc/default/grub
+    echo "Setting grub timeout to 10 seconds"
+    sed -i '/GRUB_TIMEOUT=/d' /etc/default/grub
+    echo 'GRUB_TIMEOUT="10"' >> /etc/default/grub
+    echo "Setting vampire as default"
+    sed -i '/GRUB_THEME=/d' /etc/default/grub
+    echo "GRUB_THEME=/usr/share/grub/themes/vampire/theme.txt" >> /etc/default/grub
+    echo "Updating grub config..."
+    grub-mkconfig -o /boot/grub/grub.cfg
+    echo "ALL DONE"
+}
