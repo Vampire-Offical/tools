@@ -1,0 +1,30 @@
+pkgname=desktop-xfce4
+pkgver=1
+pkgrel=1
+pkgdesc="xfce4 destop settings for vampire "
+arch=('any')
+license=('GPL3')
+depends=('bash')
+makedepends=('git')
+groups=('vampire')
+source=("$pkgname::git+https://github.com/Vampire-Offical/custom_desktop_light.git")
+md5sums=('SKIP')
+
+install=test.install
+
+
+package() {
+    mkdir -p $pkgdir/usr/local/temp
+    mkdir -p $pkgdir/usr/share/backgrounds/vampire
+    mkdir -p $pkgdir/usr/share/icons/vampire/
+    
+    cd $srcdir/$pkgname
+    cp -r .config $pkgdir/usr/local/temp/
+    cp -r .icons $pkgdir/usr/local/temp/
+    cp -r .kde4 $pkgdir/usr/local/temp/
+    cp -r .local $pkgdir/usr/local/temp/
+    cp -r .themes $pkgdir/usr/local/temp/
+    cp default.png $pkgdir/usr/share/backgrounds/vampire/
+    cp logo.png $pkgdir/usr/share/icons/vampire/
+
+}
