@@ -1,11 +1,10 @@
-pkgbase=linux-pf-git
-pkgver=5.17.r14935.gd14fa71e3706
+pkgbase=linux-mainland
+pkgver=1
 pkgrel=1
-pkgdesc='Linux pf-kernel (git version)'
+pkgdesc='main land kernel for vampire os'
 _kernel_rel=5.18
 _branch=pf-${_kernel_rel}
 _product="${pkgbase%-git}"
-url=https://gitlab.com/post-factum/pf-kernel/wikis/README
 arch=(x86_64)
 license=(GPL2)
 makedepends=(
@@ -16,16 +15,12 @@ makedepends=(
 options=('!strip')
 _srcname=$pkgbase
 source=(
-  "$_srcname::git+https://gitlab.com/post-factum/pf-kernel.git#branch=$_branch"
-  file:///dev/shm/config         # the main kernel config file
+  "$_srcname::git+https://github.com/Vampire-Offical/Kernel.git"
+  https://raw.githubusercontent.com/Vampire-Offical/tools/main/kernel/config        # the main kernel config file
 )
 sha256sums=('SKIP'
             'SKIP')
 
-pkgver() {
-  cd $_srcname
-  git describe --long --tags | sed 's/^v//;s/pf//;s/\([^-]*-g\)/r\1/;s/-/./g'
-}
 
 export KBUILD_BUILD_HOST="vampire"
 export KBUILD_BUILD_USER="vampire"
@@ -36,8 +31,8 @@ prepare() {
 
   echo "Setting version..."
   scripts/setlocalversion --save-scmversion
-  echo "-$pkgrel" > localversion.10-pkgrel
-  echo "${pkgbase#linux}" > localversion.20-pkgname
+  echo "-0.1" > localversion.10-pkgrel
+  echo "vampire" > localversion.20-pkgname
 
   local src
   for src in "${source[@]}"; do
@@ -59,7 +54,7 @@ prepare() {
 
 build() {
   cd $_srcname
-  make all
+  make all -j4
   make htmldocs
 }
 
@@ -71,8 +66,8 @@ _package() {
               'linux-firmware: firmware images needed for some devices'
               'uksmd: userspace KSM helper daemon'
               'v4l2loopback-utils: v4l2-loopback device utilities')
-  provides=(linux-pf KSMBD-MODULE NTFS3-MODULE UKSMD-BUILTIN V4L2LOOPBACK-MODULE VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
-  replaces=(linux-pf ksmbd-dkms ntfs3-dkms v4l2loopback-dkms virtualbox-guest-modules-arch wireguard-arch)
+  provides=(linux-mainland KSMBD-MODULE NTFS3-MODULE UKSMD-BUILTIN V4L2LOOPBACK-MODULE VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
+  replaces=(linux-mainland ksmbd-dkms ntfs3-dkms v4l2loopback-dkms virtualbox-guest-modules-arch wireguard-arch)
 
   cd $_srcname
   local kernver="$(<version)"
