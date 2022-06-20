@@ -1,29 +1,35 @@
-pkgbase=linux-mainland
-pkgver=1
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+
+pkgbase=linux
+pkgver=5.18.5.arch1
 pkgrel=1
-pkgdesc='main land kernel for vampire os'
-_kernel_rel=5.18
-_branch=pf-${_kernel_rel}
-_product="${pkgbase%-git}"
+pkgdesc='Linux'
+_srctag=v${pkgver%.*}-${pkgver##*.}
+url="https://github.com/archlinux/linux/commits/$_srctag"
 arch=(x86_64)
 license=(GPL2)
 makedepends=(
-  bc kmod libelf pahole cpio perl tar xz
-  xmlto python-sphinx python-sphinx_rtd_theme graphviz imagemagick
+  bc libelf pahole cpio perl tar xz
+  xmlto python-sphinx python-sphinx_rtd_theme graphviz imagemagick texlive-latexextra
   git
 )
 options=('!strip')
-_srcname=$pkgbase
+_srcname=archlinux-linux
 source=(
-  "$_srcname::git+https://github.com/Vampire-Offical/Kernel.git"
-  https://raw.githubusercontent.com/Vampire-Offical/tools/main/kernel/config        # the main kernel config file
+  "$_srcname::git+https://github.com/archlinux/linux?signed#tag=$_srctag"
+  config         # the main kernel config file
+)
+validpgpkeys=(
+  'ABAF11C65A2970B130ABE3C479BE3E4300411886'  # Linus Torvalds
+  '647F28654894E3BD457199BE38DBBDC86092693E'  # Greg Kroah-Hartman
+  'A2FF3A36AAA56654109064AB19802F8B0D70FC30'  # Jan Alexander Steffens (heftig)
+  'C7E7849466FE2358343588377258734B41C31549'  # David Runge <dvzrv@archlinux.org>
 )
 sha256sums=('SKIP'
-            'SKIP')
+            '533d32e1f6c33f7f390796af18dc3dca0a6aa294f8e9340600cd86c8df65e25b')
 
-
-export KBUILD_BUILD_HOST="vampire"
-export KBUILD_BUILD_USER="vampire"
+export KBUILD_BUILD_HOST=archlinux
+export KBUILD_BUILD_USER=$pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
 
 prepare() {
@@ -31,8 +37,8 @@ prepare() {
 
   echo "Setting version..."
   scripts/setlocalversion --save-scmversion
-  echo "-0.1" > localversion.10-pkgrel
-  echo "vampire" > localversion.20-pkgname
+  echo "-$pkgrel" > localversion.10-pkgrel
+  echo "${pkgbase#linux}" > localversion.20-pkgname
 
   local src
   for src in "${source[@]}"; do
@@ -50,24 +56,26 @@ prepare() {
 
   make -s kernelrelease > version
   echo "Prepared $pkgbase version $(<version)"
+  scripts/config --module  CONFIG_ASHMEM
+  scripts/config --enable  CONFIG_ANDROID
+  scripts/config --enable  CONFIG_ANDROID_BINDER_IPC
+  scripts/config --enable  CONFIG_ANDROID_BINDERFS
+  scripts/config --set-str CONFIG_ANDROID_BINDER_DEVICES ""
+
 }
 
 build() {
   cd $_srcname
-  make all -j4
-  make htmldocs
+  make htmldocs all
 }
 
 _package() {
   pkgdesc="The $pkgdesc kernel and modules"
   depends=(coreutils kmod initramfs)
   optdepends=('wireless-regdb: to set the correct wireless channels of your country'
-              'ksmbd-tools: userspace tools for the ksmbd kernel SMB server'
-              'linux-firmware: firmware images needed for some devices'
-              'uksmd: userspace KSM helper daemon'
-              'v4l2loopback-utils: v4l2-loopback device utilities')
-  provides=(linux-mainland KSMBD-MODULE NTFS3-MODULE UKSMD-BUILTIN V4L2LOOPBACK-MODULE VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
-  replaces=(linux-mainland ksmbd-dkms ntfs3-dkms v4l2loopback-dkms virtualbox-guest-modules-arch wireguard-arch)
+              'linux-firmware: firmware images needed for some devices')
+  provides=(VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
+  replaces=(virtualbox-guest-modules-arch wireguard-arch)
 
   cd $_srcname
   local kernver="$(<version)"
@@ -82,7 +90,8 @@ _package() {
   echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
 
   echo "Installing modules..."
-  make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 modules_install
+  make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
+    DEPMOD=/doesnt/exist modules_install  # Suppress depmod
 
   # remove build and source links
   rm "$modulesdir"/{source,build}
@@ -106,7 +115,7 @@ _package-headers() {
   install -Dt "$builddir/tools/objtool" tools/objtool/objtool
 
   # required when DEBUG_INFO_BTF_MODULES is enabled
-  # install -Dt "$builddir/tools/bpf/resolve_btfids" tools/bpf/resolve_btfids/resolve_btfids
+  install -Dt "$builddir/tools/bpf/resolve_btfids" tools/bpf/resolve_btfids/resolve_btfids
 
   echo "Installing headers..."
   cp -t "$builddir" -a include
@@ -189,12 +198,12 @@ _package-docs() {
   ln -sr "$builddir/Documentation" "$pkgdir/usr/share/doc/$pkgbase"
 }
 
-pkgname=("${_product}-git" "${_product}-headers-git" "${_product}-docs-git")
-for _package in "${pkgname[@]}"; do
-  local _package_no_git="${_package%-git}"
-  local _package_stripped="${_package_no_git#$_product}"
-  eval "package_${_package}() {
-  $(declare -f "_package${_package_stripped}")
-  _package${_package_stripped}
-}"
+pkgname=("$pkgbase" "$pkgbase-headers" "$pkgbase-docs")
+for _p in "${pkgname[@]}"; do
+  eval "package_$_p() {
+    $(declare -f "_package${_p#$pkgbase}")
+    _package${_p#$pkgbase}
+  }"
 done
+
+# vim:set ts=8 sts=2 sw=2 et:
