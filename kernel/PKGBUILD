@@ -1,6 +1,6 @@
 # Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
 
-pkgbase=linux
+_pkgbase=linux
 pkgver=nexgen
 pkgrel=1
 pkgdesc='Kernel for Vampire OS'
@@ -11,12 +11,18 @@ makedepends=(
   xmlto python-sphinx python-sphinx_rtd_theme graphviz imagemagick texlive-latexextra
   git
 )
+
+
 options=('!strip')
 _srcname=archlinux-linux
 source=(
   "$_srcname.tar.xz::https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.18.5.tar.xz"
   config         # the main kernel config file
+  linux-nexgen.preset
 )
+
+#install=setup.install
+
 validpgpkeys=(
   'ABAF11C65A2970B130ABE3C479BE3E4300411886'  # Linus Torvalds
   '647F28654894E3BD457199BE38DBBDC86092693E'  # Greg Kroah-Hartman
@@ -24,19 +30,21 @@ validpgpkeys=(
   'C7E7849466FE2358343588377258734B41C31549'  # David Runge <dvzrv@archlinux.org>
 )
 sha256sums=('SKIP'
-            'SKIP')
+            'SKIP'
+            'SKIP'
+)
 
-export KBUILD_BUILD_HOST=archlinux
-export KBUILD_BUILD_USER=$pkgbase
+export KBUILD_BUILD_HOST=vampire
+export KBUILD_BUILD_USER=$_pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
 
 prepare() {
-  cd $_srcname
+  cd linux-5.18.5
 
   echo "Setting version..."
   scripts/setlocalversion --save-scmversion
   echo "-$pkgrel" > localversion.10-pkgrel
-  echo "${pkgbase#linux}" > localversion.20-pkgname
+  echo "${_pkgbase#linux}" > localversion.20-pkgname
 
   local src
   for src in "${source[@]}"; do
@@ -53,7 +61,7 @@ prepare() {
   diff -u ../config .config || :
 
   make -s kernelrelease > version
-  echo "Prepared $pkgbase version $(<version)"
+  echo "Prepared $_pkgbase version $(<version)"
   scripts/config --module  CONFIG_ASHMEM
   scripts/config --enable  CONFIG_ANDROID
   scripts/config --enable  CONFIG_ANDROID_BINDER_IPC
@@ -62,20 +70,22 @@ prepare() {
 
 }
 
-build() {
-  cd $_srcname
-  make htmldocs all
-}
+ #build() {
+ #  cd linux-5.18.5
+ #  make htmldocs all -j4
+ #}
 
-_package() {
+_package-nexgen() {
   pkgdesc="The $pkgdesc kernel and modules"
   depends=(coreutils kmod initramfs)
   optdepends=('wireless-regdb: to set the correct wireless channels of your country'
               'linux-firmware: firmware images needed for some devices')
   provides=(VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
   replaces=(virtualbox-guest-modules-arch wireguard-arch)
-
-  cd $_srcname
+  install=setup.install
+  mkdir -p $pkgdir/etc/mkinitcpio.d
+  install -Dm644 linux-nexgen.preset $pkgdir/etc/mkinitcpio.d/
+  cd linux-5.18.5
   local kernver="$(<version)"
   local modulesdir="$pkgdir/usr/lib/modules/$kernver"
 
@@ -83,9 +93,12 @@ _package() {
   # systemd expects to find the kernel here to allow hibernation
   # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
   install -Dm644 "$(make -s image_name)" "$modulesdir/vmlinuz"
+  
+  install -D -m644 "arch/x86/boot/bzImage" "$pkgdir/boot/vmlinuz-linux-nexgen" 
+ # Used by mkinitcpio to name the kernel
 
-  # Used by mkinitcpio to name the kernel
-  echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
+
+  echo "$_pkgbase" | install -Dm644 /dev/stdin "$modulesdir/_pkgbase"
 
   echo "Installing modules..."
   make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
@@ -95,11 +108,11 @@ _package() {
   rm "$modulesdir"/{source,build}
 }
 
-_package-headers() {
+_package-nexgen-headers() {
   pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
   depends=(pahole)
 
-  cd $_srcname
+  cd linux-5.18.5
   local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
 
   echo "Installing build files..."
@@ -174,13 +187,13 @@ _package-headers() {
 
   echo "Adding symlink..."
   mkdir -p "$pkgdir/usr/src"
-  ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
+  ln -sr "$builddir" "$pkgdir/usr/src/$_pkgbase"
 }
 
-_package-docs() {
+_package-nexgen-docs() {
   pkgdesc="Documentation for the $pkgdesc kernel"
 
-  cd $_srcname
+  cd linux-5.18.5
   local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
 
   echo "Installing documentation..."
@@ -193,14 +206,14 @@ _package-docs() {
 
   echo "Adding symlink..."
   mkdir -p "$pkgdir/usr/share/doc"
-  ln -sr "$builddir/Documentation" "$pkgdir/usr/share/doc/$pkgbase"
+  ln -sr "$builddir/Documentation" "$pkgdir/usr/share/doc/$_pkgbase"
 }
 
-pkgname=("$pkgbase" "$pkgbase-headers" "$pkgbase-docs")
+pkgname=("linux-nexgen" "linux-nexgen-headers" "linux-nexgen-docs")
 for _p in "${pkgname[@]}"; do
   eval "package_$_p() {
-    $(declare -f "_package${_p#$pkgbase}")
-    _package${_p#$pkgbase}
+    $(declare -f "_package${_p#$_pkgbase}")
+    _package${_p#$_pkgbase}
   }"
 done
 
