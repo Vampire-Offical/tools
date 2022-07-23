@@ -1,0 +1,16 @@
+
+pkgname=vampire-keyring
+pkgver=1
+pkgrel=1
+pkgdesc='vampire PGP keyring'
+arch=('any')
+license=('GPL')
+install="${pkgname}.install"
+source=('Makefile'
+        'vampire.gpg')
+
+
+package() {
+  cd "${srcdir}"
+  make PREFIX=/usr DESTDIR=${pkgdir} install
+}

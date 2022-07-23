@@ -1,0 +1,23 @@
+msg() {
+    local ALL_OFF="\e[1;0m"
+    local BOLD="\e[1;1m"
+    local GREEN="${BOLD}\e[1;32m"
+
+    local MESSAGE=$1
+    shift 1
+    printf "${GREEN}==>${ALL_OFF}${BOLD} ${MESSAGE}${ALL_OFF}\n" "$@" >&2
+}
+
+
+post_upgrade() {
+	pacman-key --init
+	pacman-key  --add /usr/share/pacman/keyrings/vampire.gpg
+	pacman-key --lsign-key 5B8B3CC388B074BC136A8FC33124CABA79352443
+	pacman-key --populate
+}
+
+post_install() {
+	if [ -x usr/bin/pacman-key ]; then
+		post_upgrade
+	fi
+}
